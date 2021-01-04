@@ -10,16 +10,16 @@ import (
 )
 
 const (
-	// the number of successful healthcheck responses required,
+	// the number of successful health check responses required,
 	// per scheme, for an ip/host check to pass
-	healthcheckSuccess = 3
+	healthCheckSuccess = 3
 )
 
 var (
-	errHealthcheckRequest  = fmt.Errorf("error performing one or more healthchecks")
-	errHealthcheckResponse = fmt.Errorf("error handling one or more healthchecks")
-	errHealthcheckStatus   = fmt.Errorf("invalid status code returned from one or more healthchecks")
-	errHealthcheckCritical = fmt.Errorf("critical error, all healthchecks failed")
+	errHealthCheckRequest  = fmt.Errorf("error performing one or more health checks")
+	errHealthCheckResponse = fmt.Errorf("error handling one or more health checks")
+	errHealthCheckStatus   = fmt.Errorf("invalid status code returned from one or more health checks")
+	errHealthCheckCritical = fmt.Errorf("critical error, all health checks failed")
 )
 
 // Mockable http client interface
@@ -40,11 +40,11 @@ var httpClient = &http.Client{
 // ensureHostHealthChecks performs multiple http/s health checks on a given ip/host.
 // the number of successful attempts MUST match the required amount in order for
 // this method to return err == nil
-func ensureHostHealthchecks(ip net.IP, host string) error {
-	// we MUST perform healthchecks on both http and https protocols
+func ensureHostHealthChecks(ip net.IP, host string) error {
+	// we MUST perform health checks on both http and https protocols
 	schemes := []string{"http", "https"}
 
-	// success counter should be incremented after each successful healthcheck
+	// success counter should be incremented after each successful health check
 	success := 0
 
 	// attempt to validate the host url, any errors should be treated as fatal
@@ -53,14 +53,12 @@ func ensureHostHealthchecks(ip net.IP, host string) error {
 		return fmt.Errorf("error parsing host url: %w", err)
 	}
 
-	// failError represents the newest error received after all healthchecks
+	// failError represents the newest error received after all health checks
 	// have completed
 	var failError error
 
 	for _, scheme := range schemes {
-		// for each scheme, we want to perform healthcheckSuccess/N requests
-		// to ensure consistency
-		for i := 0; i < healthcheckSuccess; i++ {
+		for i := 0; i < healthCheckSuccess; i++ {
 			u.Scheme = scheme
 
 			// TODO: zerolog
@@ -84,23 +82,22 @@ func ensureHostHealthchecks(ip net.IP, host string) error {
 			// attempt to perform http request
 			res, err := httpClient.Do(req)
 			if err != nil {
-				failError = errHealthcheckRequest
+				failError = errHealthCheckRequest
 				// TODO: zerolog
 				//logCtx.WithError(err).Error("error performing http request")
 				continue
 			}
 
-			// we don't read the body so an error shouldn't be classed as a failed
-			// healthcheck
+			// we don't read the body so an error shouldn't be classed as a failed health check
 			if err := res.Body.Close(); err != nil {
-				failError = errHealthcheckResponse
+				failError = errHealthCheckResponse
 				// TODO: zerolog
 				//logCtx.WithError(err).Error("error closing request body")
 			}
 
 			// successful http requests will only return 200 OK
 			if res.StatusCode != http.StatusOK {
-				failError = errHealthcheckStatus
+				failError = errHealthCheckStatus
 				// TODO: zerolog
 				//logCtx.Errorf("invalid http response code: %d", res.StatusCode)
 				continue
@@ -111,9 +108,9 @@ func ensureHostHealthchecks(ip net.IP, host string) error {
 	}
 
 	// check success rate == required count
-	passRate := (healthcheckSuccess * len(schemes))
+	passRate := (healthCheckSuccess * len(schemes))
 	if success != passRate {
-		return fmt.Errorf("failed %d out of %d healthchecks: %w", (passRate - success), passRate, failError)
+		return fmt.Errorf("failed %d out of %d health checks: %w", (passRate - success), passRate, failError)
 	}
 
 	return nil

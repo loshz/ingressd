@@ -27,7 +27,7 @@ func TestEnsureHostHealthchecks(t *testing.T) {
 		doFunc: func(*http.Request) (*http.Response, error) {
 			return nil, fmt.Errorf("http do error")
 		},
-		err: errHealthcheckRequest,
+		err: errHealthCheckRequest,
 	}
 
 	testTable["TestInvalidStatusCode"] = mockDoer{
@@ -38,7 +38,7 @@ func TestEnsureHostHealthchecks(t *testing.T) {
 				StatusCode: http.StatusBadRequest,
 			}, nil
 		},
-		err: errHealthcheckStatus,
+		err: errHealthCheckStatus,
 	}
 
 	testTable["TestSuccess"] = mockDoer{
@@ -53,7 +53,7 @@ func TestEnsureHostHealthchecks(t *testing.T) {
 
 	for name, test := range testTable {
 		t.Run(name, func(t *testing.T) {
-			err := ensureHostHealthchecks(net.ParseIP("192.168.0.1"), "syscll.org")
+			err := ensureHostHealthChecks(net.ParseIP("192.168.0.1"), "syscll.org")
 			if test.err != nil && errors.Is(test.err, err) {
 				t.Errorf("expected error: '%v', got: '%v'", test.err, err)
 			}
