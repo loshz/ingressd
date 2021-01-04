@@ -18,7 +18,7 @@ func (m mockDoer) Do(req *http.Request) (*http.Response, error) {
 	return m.doFunc(req)
 }
 
-func TestEnsureHostHealthchecks(t *testing.T) {
+func TestEnsureHostHealthChecks(t *testing.T) {
 	t.Parallel()
 
 	testTable := make(map[string]mockDoer)
@@ -53,7 +53,7 @@ func TestEnsureHostHealthchecks(t *testing.T) {
 
 	for name, test := range testTable {
 		t.Run(name, func(t *testing.T) {
-			err := ensureHostHealthChecks(net.ParseIP("192.168.0.1"), "syscll.org")
+			err := ensureHostHealthChecks(test, net.ParseIP("192.168.0.1"), "syscll.org")
 			if test.err != nil && errors.Is(test.err, err) {
 				t.Errorf("expected error: '%v', got: '%v'", test.err, err)
 			}

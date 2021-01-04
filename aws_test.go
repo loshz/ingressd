@@ -207,7 +207,7 @@ func TestEnsureRoute53RecordSet(t *testing.T) {
 		err: fmt.Errorf("error performing change to record set: route53 error"),
 	}
 
-	testTable["TestChangeRecordSetError"] = mockRoute53ReadWriter{
+	testTable["TestSuccess"] = mockRoute53ReadWriter{
 		changeFunc: func(*route53.ChangeResourceRecordSetsInput) (*route53.ChangeResourceRecordSetsOutput, error) {
 			return nil, nil
 		},
@@ -230,8 +230,7 @@ func TestEnsureRoute53RecordSet(t *testing.T) {
 				route53: test,
 			}
 
-			var ips []net.IP
-			ips = append(ips, net.ParseIP("192.168.0.1"))
+			ips := []net.IP{net.IP("192.168.0.1")}
 
 			err := mgr.ensureRoute53RecordSet("syscll.org", ips)
 			if test.err != nil && err.Error() != test.err.Error() {

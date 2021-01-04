@@ -122,7 +122,7 @@ func poll(region, tag string, records []string) error {
 		// for each ip addr, perform health check to ensure the node successfully
 		// handles a request to the host record
 		for _, ip := range ips {
-			if err := ensureHostHealthChecks(ip, record); err != nil {
+			if err := ensureHostHealthChecks(httpClient, ip, record); err != nil {
 				// TODO: zerolog
 				continue
 			}

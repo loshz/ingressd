@@ -40,7 +40,7 @@ var httpClient = &http.Client{
 // ensureHostHealthChecks performs multiple http/s health checks on a given ip/host.
 // the number of successful attempts MUST match the required amount in order for
 // this method to return err == nil
-func ensureHostHealthChecks(ip net.IP, host string) error {
+func ensureHostHealthChecks(httpClient httpDoer, ip net.IP, host string) error {
 	// we MUST perform health checks on both http and https protocols
 	schemes := []string{"http", "https"}
 
