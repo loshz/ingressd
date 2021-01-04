@@ -6,6 +6,8 @@ import (
 	"net"
 	"net/http"
 	"net/url"
+	"sync"
+	"sync/atomic"
 	"time"
 )
 
@@ -45,7 +47,7 @@ func ensureHostHealthChecks(httpClient httpDoer, ip net.IP, host string) error {
 	schemes := []string{"http", "https"}
 
 	// success counter should be incremented after each successful health check
-	success := 0
+	success := uint32(0)
 
 	// attempt to validate the host url, any errors should be treated as fatal
 	u, err := url.Parse(ip.String())
@@ -53,64 +55,70 @@ func ensureHostHealthChecks(httpClient httpDoer, ip net.IP, host string) error {
 		return fmt.Errorf("error parsing host url: %w", err)
 	}
 
-	// failError represents the newest error received after all health checks
-	// have completed
-	var failError error
+	var wg sync.WaitGroup
 
 	for _, scheme := range schemes {
 		for i := 0; i < healthCheckSuccess; i++ {
-			u.Scheme = scheme
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
 
-			// TODO: zerolog
-			//logCtx := log.WithFields(log.Fields{
-			//	"url":  u,
-			//	"host": host,
-			//	"ip":   ip,
-			//})
+				u.Scheme = scheme
 
-			// attempt to create http request, any errors should be treated as fatal
-			// as the arguments will not change on the next iteration
-			req, err := http.NewRequest(http.MethodGet, u.String(), nil)
-			if err != nil {
-				return fmt.Errorf("error building http request: %v", err)
-			}
-
-			// as we are using the server ip in the http request, we need to set
-			// the host manually
-			req.Host = host
-
-			// attempt to perform http request
-			res, err := httpClient.Do(req)
-			if err != nil {
-				failError = errHealthCheckRequest
 				// TODO: zerolog
-				//logCtx.WithError(err).Error("error performing http request")
-				continue
-			}
+				//logCtx := log.WithFields(log.Fields{
+				//	"url":  u,
+				//	"host": host,
+				//	"ip":   ip,
+				//})
 
-			// we don't read the body so an error shouldn't be classed as a failed health check
-			if err := res.Body.Close(); err != nil {
-				failError = errHealthCheckResponse
-				// TODO: zerolog
-				//logCtx.WithError(err).Error("error closing request body")
-			}
+				// attempt to create http request, any errors should be treated as fatal
+				// as the arguments will not change on the next iteration
+				req, err := http.NewRequest(http.MethodGet, u.String(), nil)
+				if err != nil {
+					// TODO: zerolog
+					// fmt.Errorf("error building http request: %v", err)
+				}
 
-			// successful http requests will only return 200 OK
-			if res.StatusCode != http.StatusOK {
-				failError = errHealthCheckStatus
-				// TODO: zerolog
-				//logCtx.Errorf("invalid http response code: %d", res.StatusCode)
-				continue
-			}
+				// as we are using the server ip in the http request, we need to set
+				// the host manually
+				req.Host = host
 
-			success++
+				// attempt to perform http request
+				res, err := httpClient.Do(req)
+				if err != nil {
+					//failError = errHealthCheckRequest
+					// TODO: zerolog
+					//logCtx.WithError(err).Error("error performing http request")
+					return
+				}
+
+				// we don't read the body so an error shouldn't be classed as a failed health check
+				if err := res.Body.Close(); err != nil {
+					//failError = errHealthCheckResponse
+					// TODO: zerolog
+					//logCtx.WithError(err).Error("error closing request body")
+				}
+
+				// successful http requests will only return 200 OK
+				if res.StatusCode != http.StatusOK {
+					//failError = errHealthCheckStatus
+					// TODO: zerolog
+					//logCtx.Errorf("invalid http response code: %d", res.StatusCode)
+					return
+				}
+
+				atomic.AddUint32(&success, 1)
+			}()
 		}
 	}
 
+	wg.Wait()
+
 	// check success rate == required count
 	passRate := (healthCheckSuccess * len(schemes))
-	if success != passRate {
-		return fmt.Errorf("failed %d out of %d health checks: %w", (passRate - success), passRate, failError)
+	if int(success) != passRate {
+		return fmt.Errorf("failed %d out of %d health checks", (passRate - int(success)), passRate)
 	}
 
 	return nil

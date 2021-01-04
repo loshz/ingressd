@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/signal"
 	"strings"
+	"sync"
 	"syscall"
 	"time"
 )
@@ -115,27 +116,37 @@ func poll(region, tag string, records []string) error {
 	// TODO: zerolog
 	log.Printf("found %d ip addrs", len(ips))
 
+	var wg sync.WaitGroup
+
 	// attempt to upsert record set with given ip addrs
 	for _, record := range records {
-		var healthy []net.IP
+		wg.Add(1)
+		go func(record string) {
+			defer wg.Done()
 
-		// for each ip addr, perform health check to ensure the node successfully
-		// handles a request to the host record
-		for _, ip := range ips {
-			if err := ensureHostHealthChecks(httpClient, ip, record); err != nil {
-				// TODO: zerolog
-				continue
+			var healthy []net.IP
+
+			// for each ip addr, perform health check to ensure the node successfully
+			// handles a request to the host record
+			for _, ip := range ips {
+				if err := ensureHostHealthChecks(httpClient, ip, record); err != nil {
+					// TODO: zerolog
+					continue
+				}
+				healthy = append(healthy, ip)
 			}
-			healthy = append(healthy, ip)
-		}
 
-		if err := aws.ensureRoute53RecordSet(record, healthy); err != nil {
-			// TODO: zerolog
-			//log.WithError(err).WithField("host", host).Error("error performing change on resource record")
-			continue
-		}
-		// TODO: zerolog
-		log.Printf("all records are up to date")
+			if err := aws.ensureRoute53RecordSet(record, healthy); err != nil {
+				// TODO: zerolog
+				//log.WithError(err).WithField("host", host).Error("error performing change on resource record")
+			}
+		}(record)
 	}
+
+	wg.Wait()
+
+	// TODO: zerolog
+	log.Printf("all records are up to date")
+
 	return nil
 }
