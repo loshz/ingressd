@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"log"
 	"net"
 	"net/http"
 	"os"
@@ -11,6 +10,9 @@ import (
 	"sync"
 	"syscall"
 	"time"
+
+	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/log"
 )
 
 const (
@@ -30,22 +32,25 @@ const (
 var tlsSkipVerify bool
 
 func main() {
+	// UNIX Time is faster and smaller than most timestamps
+	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
+
 	// parse valid aws ec2 tag
 	tag := os.Getenv(envAWSEC2Tag)
 	if tag == "" {
-		log.Fatalf("missing aws ec2 tag: %s", envAWSEC2Tag)
+		log.Fatal().Msgf("missing aws ec2 tag: %s", envAWSEC2Tag)
 	}
 
 	// parse aws region
 	region := os.Getenv(envAWSRegion)
 	if region == "" {
-		log.Fatalf("missing aws region: %s", envAWSRegion)
+		log.Fatal().Msgf("missing aws region: %s", envAWSRegion)
 	}
 
 	// parse route53 records
 	records := strings.Split(os.Getenv(envAWSRoute53Records), ",")
 	if len(records) == 0 {
-		log.Fatalf("missing aws route53 records: %s", envAWSRoute53Records)
+		log.Fatal().Msgf("missing aws route53 records: %s", envAWSRoute53Records)
 	}
 
 	// parse poll interval
@@ -55,7 +60,7 @@ func main() {
 	}
 	poll, err := time.ParseDuration(p)
 	if err != nil {
-		log.Fatalf("invalid poll interval: %s: %v", poll, err)
+		log.Fatal().Msgf("invalid poll interval: %s: %v", poll, err)
 	}
 
 	// configure a channel to listen for exit signals in order to perform
@@ -71,19 +76,16 @@ func main() {
 		w.Write([]byte("ok"))
 	})
 	go http.ListenAndServe(":8081", nil)
-	// TODO: zerolog
-	log.Printf("health check registered on localhost:8081/healthz")
+	log.Info().Msg("health check registered on localhost:8081/healthz")
 
 	// start a ticker at `poll` intervals
 	t := time.NewTicker(poll)
-	// TODO: zerolog
-	log.Printf("service started, will attempt assign ip addresses every %s", poll)
+	log.Info().Msgf("service started, will attempt assign ip addresses every %s", poll)
 
 	for {
 		select {
 		case <-stop:
-			// TODO: zerolog
-			log.Println("received stop signal, attempting graceful shutdown")
+			log.Info().Msg("received stop signal, attempting graceful shutdown")
 
 			// stop ticker
 			t.Stop()
@@ -113,7 +115,6 @@ func poll(region, tag string, records []string) error {
 		return fmt.Errorf("no ip addrs found, will try again")
 	}
 
-	// TODO: zerolog
 	log.Printf("found %d ip addrs", len(ips))
 
 	var wg sync.WaitGroup
@@ -145,8 +146,7 @@ func poll(region, tag string, records []string) error {
 
 	wg.Wait()
 
-	// TODO: zerolog
-	log.Printf("all records are up to date")
+	//log.Printf("all records are up to date")
 
 	return nil
 }
