@@ -158,8 +158,7 @@ func TestGetEC2PublicIPAddrs(t *testing.T) {
 				ec2: test,
 			}
 
-			// TODO: use tag
-			ips, err := mgr.getTaggedEC2PublicIPAddrs("")
+			ips, err := mgr.getTaggedEC2PublicIPAddrs("key", "value")
 			if test.err != nil && err.Error() != test.err.Error() {
 				t.Errorf("expected error: '%v', got: '%v'", test.err, err)
 			}

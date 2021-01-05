@@ -21,23 +21,21 @@ const (
 	// AWS region of EC2 instances to query
 	envAWSRegion = "AWS_REGION"
 
-	// list of Route53 records to be updated
+	// comma separated list of Route53 records to be updated, e.g: syscll.org,ingress.syscll.org,haproxy.syscll.org
 	envAWSRoute53Records = "AWS_ROUTE53_RECORDS"
 
 	// poll interval for route53 updates, default: 30s
 	envPollInterval = "POLL_INTERVAL"
 )
 
-var tlsSkipVerify bool
-
 func main() {
 	// UNIX Time is faster and smaller than most timestamps
 	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
 
-	// parse valid aws ec2 tag
-	tag := os.Getenv(envAWSEC2Tag)
-	if tag == "" {
-		log.Fatal().Msgf("missing aws ec2 tag: %s", envAWSEC2Tag)
+	// parse valid aws ec2 tag into parts, tag[0] == key, tag[1] == value
+	tag := strings.SplitN(os.Getenv(envAWSEC2Tag), ":", 2)
+	if len(tag) != 2 {
+		log.Fatal().Msgf("invalid aws ec2 tag: %s", envAWSEC2Tag)
 	}
 
 	// parse aws region
@@ -79,7 +77,7 @@ func main() {
 
 	// start a ticker at given intervals
 	t := time.NewTicker(interval)
-	log.Info().Msgf("service started, will attempt assign ip addresses every %s", interval)
+	log.Info().Msgf("service started, will attempt assign ingress service ip addresses every %s", interval)
 
 	for {
 		select {
@@ -100,19 +98,19 @@ func main() {
 
 // poll periodically attempts to retrieve the public ip addrs of a set of ec2 instances
 // and ensure the provided route53 record sets are configured
-func poll(region, tag string, records []string) {
+func poll(region string, tag []string, records []string) {
 	// configure aws service manager
 	aws := newAWSManager(region)
 
 	// get all public ip addrs of ec2 instances with given tag
-	ips, err := aws.getTaggedEC2PublicIPAddrs(tag)
+	ips, err := aws.getTaggedEC2PublicIPAddrs(tag[0], tag[1])
 	if err != nil {
 		log.Error().Err(err).Msg("error getting public ip addrs")
 		return
 	}
 
 	if len(ips) == 0 {
-		log.Error().Msg("no ip addrs found")
+		log.Error().Msg("no ip addrs found, will not update")
 		return
 	}
 
@@ -128,7 +126,7 @@ func poll(region, tag string, records []string) {
 
 			var healthy []net.IP
 
-			// for each ip addr, perform health check to ensure the ip addr successfully
+			// for each ip addr, perform health checks to ensure the ip addr successfully
 			// handles a request to the host record
 			for _, ip := range ips {
 				if err := ensureHostHealthChecks(httpClient, ip, record); err != nil {
@@ -136,6 +134,11 @@ func poll(region, tag string, records []string) {
 					continue
 				}
 				healthy = append(healthy, ip)
+			}
+
+			if len(healthy) == 0 {
+				log.Error().Str("record", record).Msg("all health checks failed, will not update")
+				return
 			}
 
 			if err := aws.ensureRoute53RecordSet(record, healthy); err != nil {

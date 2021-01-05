@@ -50,13 +50,13 @@ func newAWSManager(region string) awsManager {
 
 // getTaggedEC2PublicIPAddrs queries ec2 for all instances of a given name,
 // returning their public ip addr if configured
-func (mgr awsManager) getTaggedEC2PublicIPAddrs(ec2Name string) ([]net.IP, error) {
+func (mgr awsManager) getTaggedEC2PublicIPAddrs(key, value string) ([]net.IP, error) {
 	input := &ec2.DescribeInstancesInput{
 		Filters: []*ec2.Filter{
 			{
-				Name: aws.String("tag:Name"),
+				Name: aws.String(fmt.Sprintf("tag:%s", key)),
 				Values: []*string{
-					aws.String(ec2Name),
+					aws.String(value),
 				},
 			},
 		},

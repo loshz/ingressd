@@ -25,7 +25,7 @@ type httpDoer interface {
 }
 
 // Default http client with a 10 second timeout.
-// We need to skip TLS verification as we perform queries on
+// TLS verification must be skipped as we perform queries on
 // ip addrs, not urls.
 var httpClient = &http.Client{
 	Timeout: 10 * time.Second,
