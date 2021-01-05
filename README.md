@@ -3,6 +3,9 @@
 
 A lightweight daemon used to update Route53 records with the IP addresses of your ingress services, as well as performing health checks on desired hosts.
 
+## Architecture
+...
+
 ## Usage
 As `ingressd` is currently configured to use AWS [Instance Roles](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/iam-roles-for-amazon-ec2.html), the host will need to have an EC2 Policy with at least the following actions: ...
 
@@ -25,6 +28,8 @@ metadata:
 spec:
   securityContext:
     runAsUser: 2000
+    runAsGroup: 2000
+    fsGroup: 2000
   containers:
   - name: ingressd
     image: quay.io/syscll/ingressd
