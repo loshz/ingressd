@@ -63,7 +63,7 @@ func main() {
 	// configure a channel to listen for exit signals in order to perform
 	// a graceful shutdown
 	stop := make(chan os.Signal, 1)
-	signal.Notify(stop, syscall.SIGINT, syscall.SIGTERM, syscall.SIGKILL)
+	signal.Notify(stop, syscall.SIGINT, syscall.SIGTERM)
 
 	// configure and run web server for health check,
 	// we don't care about any errors as the healthcheck caller
