@@ -9,8 +9,11 @@ on:
       - main
 
 jobs:
-  docker-build:
+  test:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - run: make docker-build
+      - uses: actions/setup-go@v1
+        with:
+          go-version: '1.15'
+      - run: make test
