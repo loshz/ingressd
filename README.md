@@ -10,11 +10,14 @@ A lightweight daemon used to update Route53 records with the IP addresses of you
 As `ingressd` is currently configured to use AWS [Instance Roles](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/iam-roles-for-amazon-ec2.html), the host will need to have an EC2 Policy with at least the following actions: ...
 
 ### Env vars
-The service is configured by setting the following environment variables:
-- `AWS_EC2_TAG`: key/value of EC2 tag to query for instances
-- `AWS_REGION`: AWS region of EC2 instances to query
-- `AWS_ROUTE53_RECORDS`: comma separated list of Route53 records to be updated
-- `POLL_INTERVAL`:  poll interval for route53 updates
+The service can be configured by setting the following environment variables:
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| `AWS_EC2_TAG` | string | key:value of EC2 tag to query for instances |
+| `AWS_REGION` | string | AWS region of EC2 instances to query |
+| `AWS_ROUTE53_RECORDS` | string slice | Comma separated list of Route53 records to be updated |
+| `POLL_INTERVAL` | string | Poll interval for Route53 updates |
 
 ### Kubernetes
 A simple single container Pod spec:
