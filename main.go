@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"net"
 	"net/http"
 	"os"
@@ -58,9 +57,9 @@ func main() {
 	if p == "" {
 		p = "30s"
 	}
-	poll, err := time.ParseDuration(p)
+	interval, err := time.ParseDuration(p)
 	if err != nil {
-		log.Fatal().Msgf("invalid poll interval: %s: %v", poll, err)
+		log.Fatal().Msgf("invalid poll interval: %s: %v", interval, err)
 	}
 
 	// configure a channel to listen for exit signals in order to perform
@@ -78,9 +77,9 @@ func main() {
 	go http.ListenAndServe(":8081", nil)
 	log.Info().Msg("health check registered on localhost:8081/healthz")
 
-	// start a ticker at `poll` intervals
-	t := time.NewTicker(poll)
-	log.Info().Msgf("service started, will attempt assign ip addresses every %s", poll)
+	// start a ticker at given intervals
+	t := time.NewTicker(interval)
+	log.Info().Msgf("service started, will attempt assign ip addresses every %s", interval)
 
 	for {
 		select {
@@ -94,28 +93,30 @@ func main() {
 
 			os.Exit(0)
 		case <-t.C:
-			// TODO: poll
+			poll(region, tag, records)
 		}
 	}
 }
 
 // poll periodically attempts to retrieve the public ip addrs of a set of ec2 instances
 // and ensure the provided route53 record sets are configured
-func poll(region, tag string, records []string) error {
+func poll(region, tag string, records []string) {
 	// configure aws service manager
 	aws := newAWSManager(region)
 
 	// get all public ip addrs of ec2 instances with given tag
 	ips, err := aws.getTaggedEC2PublicIPAddrs(tag)
 	if err != nil {
-		return fmt.Errorf("error getting public ip addrs: %v", err)
+		log.Error().Err(err).Msg("error getting public ip addrs")
+		return
 	}
 
 	if len(ips) == 0 {
-		return fmt.Errorf("no ip addrs found, will try again")
+		log.Error().Msg("no ip addrs found")
+		return
 	}
 
-	log.Printf("found %d ip addrs", len(ips))
+	log.Info().Msgf("found %d ip addrs", len(ips))
 
 	var wg sync.WaitGroup
 
@@ -127,26 +128,25 @@ func poll(region, tag string, records []string) error {
 
 			var healthy []net.IP
 
-			// for each ip addr, perform health check to ensure the node successfully
+			// for each ip addr, perform health check to ensure the ip addr successfully
 			// handles a request to the host record
 			for _, ip := range ips {
 				if err := ensureHostHealthChecks(httpClient, ip, record); err != nil {
-					// TODO: zerolog
+					log.Error().Err(err).IPAddr("ip", ip).Str("record", record).Msg("failed all health checks, will not add this record")
 					continue
 				}
 				healthy = append(healthy, ip)
 			}
 
 			if err := aws.ensureRoute53RecordSet(record, healthy); err != nil {
-				// TODO: zerolog
-				//log.WithError(err).WithField("host", host).Error("error performing change on resource record")
+				log.Error().Err(err).Str("record", record).Msg("error performing change on resource record")
+				return
 			}
+
+			log.Info().Str("record", record).Int("ip_addrs", len(healthy)).Msg("successfully updated record with healthy ip addrs")
 		}(record)
 	}
 
 	wg.Wait()
-
-	//log.Printf("all records are up to date")
-
-	return nil
+	log.Info().Msg("all records are up to date")
 }

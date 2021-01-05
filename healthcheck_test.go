@@ -1,7 +1,6 @@
 package main
 
 import (
-	"errors"
 	"fmt"
 	"io/ioutil"
 	"net"
@@ -11,7 +10,7 @@ import (
 
 type mockDoer struct {
 	doFunc func(*http.Request) (*http.Response, error)
-	err    error
+	err    bool
 }
 
 func (m mockDoer) Do(req *http.Request) (*http.Response, error) {
@@ -27,7 +26,7 @@ func TestEnsureHostHealthChecks(t *testing.T) {
 		doFunc: func(*http.Request) (*http.Response, error) {
 			return nil, fmt.Errorf("http do error")
 		},
-		err: errHealthCheckRequest,
+		err: true,
 	}
 
 	testTable["TestInvalidStatusCode"] = mockDoer{
@@ -38,7 +37,7 @@ func TestEnsureHostHealthChecks(t *testing.T) {
 				StatusCode: http.StatusBadRequest,
 			}, nil
 		},
-		err: errHealthCheckStatus,
+		err: true,
 	}
 
 	testTable["TestSuccess"] = mockDoer{
@@ -48,19 +47,17 @@ func TestEnsureHostHealthChecks(t *testing.T) {
 				StatusCode: http.StatusOK,
 			}, nil
 		},
-		err: nil,
+		err: false,
 	}
 
 	for name, test := range testTable {
 		t.Run(name, func(t *testing.T) {
 			err := ensureHostHealthChecks(test, net.ParseIP("192.168.0.1"), "syscll.org")
-			if test.err != nil && errors.Is(test.err, err) {
-				t.Errorf("expected error: '%v', got: '%v'", test.err, err)
+			if test.err && err == nil {
+				t.Errorf("expected error, got: nil")
 			}
-			if test.err == nil {
-				if err != nil {
-					t.Errorf("expected error: nil, got: %v", err)
-				}
+			if !test.err && err != nil {
+				t.Errorf("expected error: nil, got: %v", err)
 			}
 		})
 	}

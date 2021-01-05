@@ -2,7 +2,7 @@
 BUILD_NUMBER ?= dev
 CONTAINER_IMG ?= syscll/ingressd
 DOCKER ?= sudo docker
-GO_TEST_FLAGS ?= -cover -v
+GO_TEST_FLAGS ?= -race
 
 define HELP_TXT
 Use `make <target>` where <target> is one of:

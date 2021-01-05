@@ -9,6 +9,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/ec2"
 	"github.com/aws/aws-sdk-go/service/route53"
+	"github.com/rs/zerolog/log"
 )
 
 // ec2Describer implements functions for describing ec2 instance data
@@ -69,18 +70,14 @@ func (mgr awsManager) getTaggedEC2PublicIPAddrs(ec2Name string) ([]net.IP, error
 	var ips []net.IP
 	for _, reservation := range res.Reservations {
 		for _, instance := range reservation.Instances {
-			// TODO: zerolog
-			//logCtx := log.WithField("instance.id", *instance.InstanceId)
-
 			// check instance is running
-			if *instance.State.Name != ec2.InstanceStateNameRunning {
-				// TODO: zerolog
-				//logCtx.Info("skipping instance as state != running")
+			if aws.StringValue(instance.State.Name) != ec2.InstanceStateNameRunning {
+				log.Info().Str("instance.id", aws.StringValue(instance.InstanceId)).Msg("skipping instance as state != running")
 				continue
 			}
 
 			// check public ip addr is valid
-			if publicIP := net.ParseIP(*instance.PublicIpAddress); publicIP != nil {
+			if publicIP := net.ParseIP(aws.StringValue(instance.PublicIpAddress)); publicIP != nil {
 				ips = append(ips, publicIP)
 			}
 		}
