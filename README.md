@@ -1,1 +1,1 @@
-# ingressd [![Build Status](https://github.com/syscll/ingressd/workflows/build/badge.svg)](https://github.com/syscll/ingressd/actions)
+# ingressd [![Build Status](https://github.com/syscll/ingressd/workflows/build/badge.svg)](https://github.com/syscll/ingressd/actions) [![Quay.io](https://quay.io/repository/syscll/ingressd/status)](https://quay.io/repository/syscll/ingressd)

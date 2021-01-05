@@ -1,6 +1,6 @@
 # Configurable env vars
 BUILD_NUMBER ?= dev
-CONTAINER_IMG ?= syscll/ingressd
+CONTAINER_IMG ?= quay.io/syscll/ingressd
 DOCKER ?= sudo docker
 GO_TEST_FLAGS ?= -race
 

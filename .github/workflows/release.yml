@@ -1,0 +1,14 @@
+name: release
+
+on:
+  release:
+    types:
+      - created
+
+jobs:
+  distribute:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - run: echo $GITHUB_REF
+      - run: make docker-build
