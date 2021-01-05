@@ -1,1 +1,2 @@
-# ingressd [![Build Status](https://github.com/syscll/ingressd/workflows/build/badge.svg)](https://github.com/syscll/ingressd/actions) [![Quay.io](https://quay.io/repository/syscll/ingressd/status)](https://quay.io/repository/syscll/ingressd)
+# ingressd
+[![Build Status](https://github.com/syscll/ingressd/workflows/build/badge.svg)](https://github.com/syscll/ingressd/actions) [![MIT licensed](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE) [![Quay.io](https://img.shields.io/badge/container-quay.io-red)](https://quay.io/repository/syscll/ingressd)
