@@ -4,12 +4,12 @@
 A lightweight daemon used to update Route53 records with the IP addresses of your ingress services, as well as performing health checks on desired hosts.
 
 ## Architecture
-...
+![ingressd architecture](https://github.com/syscll/ingressd/blob/main/ingressd.png?raw=true)
 
 ## Usage
 As `ingressd` is currently configured to use AWS [Instance Roles](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/iam-roles-for-amazon-ec2.html), the host will need to have an EC2 Policy with at least the following actions: ...
 
-### Env vars
+### Config
 The service can be configured by setting the following environment variables:
 
 | Name | Type | Description |
