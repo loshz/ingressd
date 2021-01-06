@@ -1,10 +1,14 @@
 # ingressd
 [![Build Status](https://github.com/syscll/ingressd/workflows/build/badge.svg)](https://github.com/syscll/ingressd/actions) [![MIT licensed](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE) [![Quay.io](https://img.shields.io/badge/container-quay.io-red)](https://quay.io/repository/syscll/ingressd)
 
-A lightweight daemon used to update Route53 records with the IP addresses of your ingress services, as well as performing health checks on desired hosts.
+A lightweight daemon used to update Route53 records with the IP addresses of your ingress services, as well as perform health checks on desired hosts.
 
 ## Architecture
 ![ingressd architecture](https://github.com/syscll/ingressd/blob/main/ingressd.png?raw=true)
+0. Configure `ingressd` with list of Route53 host records.
+1. Query EC2 for nodes with a specific tag, and return their public IP addresses.
+2. Make several health checks against each ingress service IP address with specific host header (`curl -H "Host: example.com" http://192.168.0.1`).
+3. Update Route53 records with IP addresses that have passed all health checks.
 
 ## Usage
 As `ingressd` is currently configured to use AWS [Instance Roles](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/iam-roles-for-amazon-ec2.html), the host will need to have an EC2 Policy with at least the following actions: ...
