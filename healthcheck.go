@@ -59,7 +59,7 @@ func ensureHostHealthChecks(httpClient httpDoer, ip net.IP, host string) error {
 				defer wg.Done()
 
 				logCtx := map[string]interface{}{
-					"url":  u,
+					"url":  u.String(),
 					"host": host,
 					"ip":   ip,
 				}

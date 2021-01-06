@@ -77,7 +77,7 @@ func main() {
 
 	// start a ticker at given intervals
 	t := time.NewTicker(interval)
-	log.Info().Msgf("service started, will attempt assign ingress service ip addresses every %s", interval)
+	log.Info().Msgf("service started, will attempt to assign ingress service ip addresses every %s", interval)
 
 	for {
 		select {

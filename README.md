@@ -5,6 +5,7 @@ A lightweight daemon used to update Route53 records with the IP addresses of you
 
 ## Architecture
 ![ingressd architecture](https://github.com/syscll/ingressd/blob/main/ingressd.png?raw=true)
+
 0. Configure `ingressd` with list of Route53 host records.
 1. Query EC2 for nodes with a specific tag, and return their public IP addresses.
 2. Make several health checks against each ingress service IP address with specific host header (`curl -H "Host: example.com" http://192.168.0.1`).
@@ -39,7 +40,7 @@ spec:
     fsGroup: 2000
   containers:
   - name: ingressd
-    image: quay.io/syscll/ingressd
+    image: quay.io/syscll/ingressd:v0.1.0
     command:
     - ingressd
     livenessProbe:
