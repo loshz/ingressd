@@ -12,7 +12,7 @@ A lightweight daemon used to update Route53 records with the IP addresses of you
 3. Update Route53 records with IP addresses that have passed all health checks.
 
 ## Usage
-As `ingressd` is currently configured to use AWS [Instance Roles](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/iam-roles-for-amazon-ec2.html), the host will need to have an EC2 Policy with at least the following actions: ...
+As `ingressd` is currently configured to use AWS [Instance Roles](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/iam-roles-for-amazon-ec2.html), the host will need to have a role with at least `AmazonEC2ReadOnlyAccess` and a Route53 policy with the following actions:`ChangeResourceRecordSets`, `ListResourceRecordSets`, `ListHostedZones`.
 
 ### Config
 The service can be configured by setting the following environment variables:
