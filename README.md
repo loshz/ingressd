@@ -64,6 +64,4 @@ spec:
 
 ## TODO
 - Expose Prometheus metrics
-- Allow different types of health checks (tcp, etc.)
-- Allow rate limiting
-- Allow health check success configuration
+- Allow host health check configuration
