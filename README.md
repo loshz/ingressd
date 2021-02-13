@@ -23,6 +23,7 @@ The service can be configured by setting the following environment variables:
 | `AWS_REGION` | string | AWS region of EC2 instances to query |
 | `AWS_ROUTE53_RECORDS` | string slice | Comma separated list of Route53 records to be updated |
 | `POLL_INTERVAL` | string | Poll interval for Route53 updates |
+| `PORT` | int | Port to bnd the local HTTP server to |
 
 ### Kubernetes
 A simple single container Pod spec:
@@ -63,5 +64,4 @@ spec:
 ```
 
 ## TODO
-- Expose Prometheus metrics
 - Allow host health check configuration

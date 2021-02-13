@@ -1,10 +1,11 @@
 package main
 
 import (
+	"context"
 	"net"
-	"net/http"
 	"os"
 	"os/signal"
+	"strconv"
 	"strings"
 	"sync"
 	"syscall"
@@ -26,6 +27,9 @@ const (
 
 	// poll interval for route53 updates, default: 30s
 	envPollInterval = "POLL_INTERVAL"
+
+	// port to bind local http server to, default: 8081
+	envPort = "PORT"
 )
 
 func main() {
@@ -60,20 +64,22 @@ func main() {
 		log.Fatal().Msgf("invalid poll interval: %s: %v", interval, err)
 	}
 
+	// parse port
+	port := 8081
+	if p := os.Getenv(envPort); p != "" {
+		port, err = strconv.Atoi(p)
+		if err != nil {
+			log.Fatal().Msgf("invalid port: %s: %v", p, err)
+		}
+	}
+
 	// configure a channel to listen for exit signals in order to perform
 	// a graceful shutdown
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, syscall.SIGINT, syscall.SIGTERM)
 
-	// configure and run web server for health check,
-	// we don't care about any errors as the healthcheck caller
-	// should interpret this as fatal
-	http.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(200)
-		w.Write([]byte("ok"))
-	})
-	go http.ListenAndServe(":8081", nil)
-	log.Info().Msg("health check registered on localhost:8081/healthz")
+	// start the local http server
+	srv := startHTTP(port)
 
 	// start a ticker at given intervals
 	t := time.NewTicker(interval)
@@ -87,8 +93,15 @@ func main() {
 			// stop ticker
 			t.Stop()
 
-			// TODO: graceful shutdown
+			// gracefully shutdown
+			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 
+			if err := srv.Shutdown(ctx); err != nil {
+				cancel()
+				log.Fatal().Err(err).Msg("error shuting down http server")
+			}
+
+			cancel()
 			os.Exit(0)
 		case <-t.C:
 			poll(region, tag, records)
@@ -115,6 +128,10 @@ func poll(region string, tag []string, records []string) {
 	}
 
 	log.Info().Msgf("found %d ip addrs", len(ips))
+
+	// reset the health check gauge before attempting to perform
+	// current health checks
+	healthCheckFailures.Set(0)
 
 	var wg sync.WaitGroup
 

@@ -10,6 +10,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/rs/zerolog/log"
 )
 
@@ -24,15 +25,23 @@ type httpDoer interface {
 	Do(*http.Request) (*http.Response, error)
 }
 
-// Default http client with a 10 second timeout.
-// TLS verification must be skipped as we perform queries on
-// ip addrs, not urls.
-var httpClient = &http.Client{
-	Timeout: 10 * time.Second,
-	Transport: &http.Transport{
-		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
-	},
-}
+var (
+	// Default http client with a 10 second timeout.
+	// TLS verification must be skipped as we perform queries on
+	// ip addrs, not urls.
+	httpClient = &http.Client{
+		Timeout: 10 * time.Second,
+		Transport: &http.Transport{
+			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+		},
+	}
+
+	// Prometheus gauge for storing number of failed health checks
+	healthCheckFailures = prometheus.NewGauge(prometheus.GaugeOpts{
+		Name: "ingressd_health_check_failures",
+		Help: "Current number of failing healh checks",
+	})
+)
 
 // ensureHostHealthChecks performs multiple http/s health checks on a given ip/host.
 // the number of successful attempts MUST match the required amount in order for
@@ -42,7 +51,7 @@ func ensureHostHealthChecks(httpClient httpDoer, ip net.IP, host string) error {
 	schemes := []string{"http", "https"}
 
 	// success counter should be incremented after each successful health check
-	var success uint32
+	var success uint64
 
 	// attempt to validate the host url, any errors should be treated as fatal
 	u, err := url.Parse(ip.String())
@@ -92,7 +101,7 @@ func ensureHostHealthChecks(httpClient httpDoer, ip net.IP, host string) error {
 					return
 				}
 
-				atomic.AddUint32(&success, 1)
+				atomic.AddUint64(&success, 1)
 			}(scheme)
 		}
 	}
@@ -102,7 +111,10 @@ func ensureHostHealthChecks(httpClient httpDoer, ip net.IP, host string) error {
 	// check success rate == required count
 	passRate := (healthCheckSuccess * len(schemes))
 	if int(success) != passRate {
-		return fmt.Errorf("failed %d out of %d health checks", (passRate - int(success)), passRate)
+		failed := passRate - int(success)
+		healthCheckFailures.Add(float64(failed))
+
+		return fmt.Errorf("failed %d out of %d health checks", failed, passRate)
 	}
 
 	return nil
