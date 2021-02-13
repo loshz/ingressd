@@ -1,5 +1,5 @@
 # ingressd
-[![Build Status](https://github.com/syscll/ingressd/workflows/build/badge.svg)](https://github.com/syscll/ingressd/actions) [![MIT licensed](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE) [![Quay.io](https://img.shields.io/badge/container-quay.io-red)](https://quay.io/repository/syscll/ingressd)
+[![Build Status](https://github.com/syscll/ingressd/workflows/ci/badge.svg)](https://github.com/syscll/ingressd/actions) [![MIT licensed](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE) [![Quay.io](https://img.shields.io/badge/container-quay.io-red)](https://quay.io/repository/syscll/ingressd)
 
 A lightweight daemon used to update Route53 records with the IP addresses of your ingress services, as well as perform health checks on desired hosts.
 
