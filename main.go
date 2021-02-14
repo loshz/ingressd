@@ -11,7 +11,6 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 )
 
@@ -33,9 +32,6 @@ const (
 )
 
 func main() {
-	// UNIX Time is faster and smaller than most timestamps
-	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
-
 	// parse valid aws ec2 tag into parts, tag[0] == key, tag[1] == value
 	tag := strings.SplitN(os.Getenv(envAWSEC2Tag), ":", 2)
 	if len(tag) != 2 {
